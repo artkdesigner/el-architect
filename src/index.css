@@ -1,13 +1,16 @@
 @import 'tailwindcss';
 
-/*
-  Токены дизайн-системы из Figma (цвета, шрифты, отступы) добавлять сюда,
-  например:
-  @theme {
-    --color-brand: #...;
-    --font-heading: ...;
-  }
-*/
+@theme {
+  --font-heading: 'Sk-Modernist', sans-serif;
+}
+
+@font-face {
+  font-family: 'Sk-Modernist';
+  src: url('./assets/fonts/sk-modernist-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   color-scheme: light dark;
@@ -15,6 +18,25 @@
 
 body {
   margin: 0;
+  font-family: var(--font-heading);
+}
+
+/* Rem-скейлинг корня под эталонные Figma-фреймы: Mobile 375, Tablet 768, Desktop 1920.
+   1rem = 16px ровно на ширине эталонного фрейма своей зоны — см. skill figma-to-code. */
+html {
+  font-size: 4.266667vw; /* 16px при 375px — Mobile */
+}
+@media screen and (min-width: 48rem) {
+  /* ≥768px — Tablet */
+  html {
+    font-size: 2.083333vw; /* 16px при 768px */
+  }
+}
+@media screen and (min-width: 64rem) {
+  /* ≥1024px — Desktop */
+  html {
+    font-size: 0.833333vw; /* 16px при 1920px */
+  }
 }
 
 /* Уважать системную настройку «уменьшить движение» — гасит все reveal-переходы
