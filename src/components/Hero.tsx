@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 import gsap from 'gsap'
-import Navbar from './Navbar'
 import heroImg1 from '../assets/hero-img-1.webp'
 import heroImg2 from '../assets/hero-img-2.webp'
 import heroImg3 from '../assets/hero-img-3.webp'
@@ -77,7 +77,18 @@ function LineMask({ lines, animated, registerRef }: LineMaskProps) {
   )
 }
 
-function Hero() {
+interface HeroProps {
+  navbarMaskRefs: [
+    RefObject<HTMLDivElement | null>,
+    RefObject<HTMLDivElement | null>,
+  ]
+  navbarBurgerLineRefs: [
+    RefObject<HTMLSpanElement | null>,
+    RefObject<HTMLSpanElement | null>,
+  ]
+}
+
+function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const contentBlackRef = useRef<HTMLDivElement>(null)
   const contentWhiteRef = useRef<HTMLDivElement>(null)
@@ -85,10 +96,8 @@ function Hero() {
   const cascadeRefs = useRef<(HTMLDivElement | null)[]>([])
   const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
   const sloganLineRefs = useRef<(HTMLSpanElement | null)[]>([])
-  const logoMaskRef = useRef<HTMLDivElement>(null)
-  const ctaMaskRef = useRef<HTMLDivElement>(null)
-  const burgerLine1Ref = useRef<HTMLSpanElement>(null)
-  const burgerLine2Ref = useRef<HTMLSpanElement>(null)
+  const [logoMaskRef, ctaMaskRef] = navbarMaskRefs
+  const [burgerLine1Ref, burgerLine2Ref] = navbarBurgerLineRefs
 
   // Intro: title letters -> slogan lines -> Hero-img-1 rise (с синхронной сменой
   // цвета текста Hero-content с чёрного на белый по границе картинки) -> реавл навбара.
@@ -168,7 +177,7 @@ function Hero() {
       cancelled = true
       tl?.kill()
     }
-  }, [])
+  }, [logoMaskRef, ctaMaskRef, burgerLine1Ref, burgerLine2Ref])
 
   // Scroll: Hero-img-2..10 наезжают по очереди друг на друга по мере скролла секции,
   // каждой картинке — равная доля от общей высоты скролл-зоны.
@@ -223,12 +232,6 @@ function Hero() {
         className="sticky top-0 h-screen overflow-hidden bg-white"
       >
         <div className="Hero relative isolate flex h-full flex-col items-start justify-center px-5">
-          <Navbar
-            logoMaskRef={logoMaskRef}
-            ctaMaskRef={ctaMaskRef}
-            burgerLineRefs={[burgerLine1Ref, burgerLine2Ref]}
-          />
-
           <div className="relative z-[11] w-full">
             <div
               ref={contentBlackRef}

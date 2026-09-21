@@ -29,7 +29,7 @@ function How() {
       if (!wrapper || wordCount === 0) return
 
       const viewportHeight = window.innerHeight
-      const scrollRoomPx = 2 * viewportHeight // 200vh
+      const scrollRoomPx = 4 * viewportHeight // 400vh
       const triggerShift = 0.2 * viewportHeight // старт при видимости секции на 80%
       const rect = wrapper.getBoundingClientRect()
       const scrolledPx = Math.min(
@@ -66,7 +66,7 @@ function How() {
   let wordIndex = 0
 
   return (
-    <div ref={wrapperRef} className="How-wrapper relative h-[300vh]">
+    <div ref={wrapperRef} className="How-wrapper relative h-[500vh]">
       <div className="sticky top-0 h-screen overflow-hidden bg-ink">
         <section className="How flex h-full items-start px-4 pt-58 md:px-5 md:pt-78">
           <p className="How-paragraph text-[2rem] leading-[1.18] tracking-[-0.1rem] text-white md:text-[2.5rem] md:tracking-[-0.125rem]">

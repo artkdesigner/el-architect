@@ -22,6 +22,18 @@ body {
   font-family: var(--font-heading);
 }
 
+/* Скрыть полосу вертикальной прокрутки по всему сайту (скролл остаётся рабочим). */
+html,
+body {
+  overflow-x: clip;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/старый Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, новый Edge */
+}
+
 /* Rem-скейлинг корня под эталонные Figma-фреймы: Mobile 375, Tablet 768, Desktop 1920.
    1rem = 16px ровно на ширине эталонного фрейма своей зоны — см. skill figma-to-code. */
 html {
