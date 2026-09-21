@@ -2,6 +2,7 @@
 
 @theme {
   --font-heading: 'Sk-Modernist', sans-serif;
+  --color-ink: #171717;
 }
 
 @font-face {

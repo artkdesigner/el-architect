@@ -232,7 +232,7 @@ function Hero() {
           <div className="relative z-[11] w-full">
             <div
               ref={contentBlackRef}
-              className={`${contentClassName} text-[#171717]`}
+              className={`${contentClassName} text-ink`}
             >
               <h1 className={titleClassName}>
                 <LetterMask
