@@ -3,9 +3,33 @@ import gsap from 'gsap'
 import Navbar from './Navbar'
 import heroImg1 from '../assets/hero-img-1.webp'
 import heroImg2 from '../assets/hero-img-2.webp'
+import heroImg3 from '../assets/hero-img-3.webp'
+import heroImg4 from '../assets/hero-img-4.webp'
+import heroImg5 from '../assets/hero-img-5.webp'
+import heroImg6 from '../assets/hero-img-6.webp'
+import heroImg7 from '../assets/hero-img-7.webp'
+import heroImg8 from '../assets/hero-img-8.webp'
+import heroImg9 from '../assets/hero-img-9.webp'
+import heroImg10 from '../assets/hero-img-10.webp'
 
 const TITLE = 'E.L.Architect'
 const SLOGAN_LINES = ['From Context', 'to Concept']
+
+// Hero-img-1 остаётся базовым слоем (свой Figma-кроп на каждом брейкпоинте,
+// поднимается интро-анимацией). 2..10 — каскад, который наезжает по одному
+// поверх предыдущего при скролле; у них нет авторского кропа под tablet/mobile,
+// поэтому используем object-cover.
+const CASCADE_IMAGES = [
+  heroImg2,
+  heroImg3,
+  heroImg4,
+  heroImg5,
+  heroImg6,
+  heroImg7,
+  heroImg8,
+  heroImg9,
+  heroImg10,
+]
 
 interface LetterMaskProps {
   text: string
@@ -58,7 +82,7 @@ function Hero() {
   const contentBlackRef = useRef<HTMLDivElement>(null)
   const contentWhiteRef = useRef<HTMLDivElement>(null)
   const heroImg1Ref = useRef<HTMLDivElement>(null)
-  const heroImg2Ref = useRef<HTMLDivElement>(null)
+  const cascadeRefs = useRef<(HTMLDivElement | null)[]>([])
   const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
   const sloganLineRefs = useRef<(HTMLSpanElement | null)[]>([])
   const logoMaskRef = useRef<HTMLDivElement>(null)
@@ -146,18 +170,28 @@ function Hero() {
     }
   }, [])
 
-  // Scroll: Hero-img-2 наезжает поверх Hero-img-1 при скролле вниз по секции.
+  // Scroll: Hero-img-2..10 наезжают по очереди друг на друга по мере скролла секции,
+  // каждой картинке — равная доля от общей высоты скролл-зоны.
   useLayoutEffect(() => {
     let frame = 0
+    const steps = cascadeRefs.current.length
 
     const update = () => {
       const wrapper = viewportRef.current?.parentElement
-      const revealImg = heroImg2Ref.current
-      if (!wrapper || !revealImg) return
+      if (!wrapper || steps === 0) return
 
       const rect = wrapper.getBoundingClientRect()
-      const progress = Math.min(Math.max(-rect.top / window.innerHeight, 0), 1)
-      revealImg.style.transform = `translateY(${(1 - progress) * 100}%)`
+      const totalScrollPx = steps * window.innerHeight
+      const scrolledPx = Math.min(Math.max(-rect.top, 0), totalScrollPx)
+
+      cascadeRefs.current.forEach((el, index) => {
+        if (!el) return
+        const stepProgress = Math.min(
+          Math.max(scrolledPx / window.innerHeight - index, 0),
+          1,
+        )
+        el.style.transform = `translateY(${(1 - stepProgress) * 100}%)`
+      })
     }
 
     const onScroll = () => {
@@ -183,7 +217,7 @@ function Hero() {
     'Hero-slogan text-xl leading-none lg:text-3xl md:text-3xl'
 
   return (
-    <div className="Hero-wrapper relative h-[200vh]">
+    <div className="Hero-wrapper relative h-[1000vh]">
       <div
         ref={viewportRef}
         className="sticky top-0 h-screen overflow-hidden bg-white"
@@ -195,7 +229,7 @@ function Hero() {
             burgerLineRefs={[burgerLine1Ref, burgerLine2Ref]}
           />
 
-          <div className="relative z-[3] w-full">
+          <div className="relative z-[11] w-full">
             <div
               ref={contentBlackRef}
               className={`${contentClassName} text-[#171717]`}
@@ -245,18 +279,23 @@ function Hero() {
             />
           </div>
 
-          <div
-            ref={heroImg2Ref}
-            className="Hero-img-2 absolute inset-0 z-[2]"
-            style={{ transform: 'translateY(100%)' }}
-          >
-            <img
-              src={heroImg2}
-              alt="Крупный план фасада здания E.L. Architect"
-              className="absolute inset-0 size-full max-w-none object-cover"
-              loading="lazy"
-            />
-          </div>
+          {CASCADE_IMAGES.map((src, index) => (
+            <div
+              key={src}
+              ref={(el) => {
+                cascadeRefs.current[index] = el
+              }}
+              className="Hero-img absolute inset-0"
+              style={{ zIndex: index + 2, transform: 'translateY(100%)' }}
+            >
+              <img
+                src={src}
+                alt={`Проект E.L. Architect, вид ${index + 2}`}
+                className="absolute inset-0 size-full max-w-none object-cover"
+                loading="lazy"
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ interface NavbarProps {
 function Navbar({ logoMaskRef, ctaMaskRef, burgerLineRefs }: NavbarProps) {
   return (
     <nav
-      className="Navbar absolute inset-x-0 top-5 z-[4] flex items-center justify-between px-4 md:px-5"
+      className="Navbar absolute inset-x-0 top-5 z-[12] flex items-center justify-between px-4 md:px-5"
       aria-label="Основная навигация"
     >
       <div
