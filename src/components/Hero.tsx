@@ -225,7 +225,7 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
   const titleClassName =
     'Hero-title text-[3.25rem] leading-none tracking-[-0.0975rem] lg:text-[7.5rem] lg:tracking-[-0.225rem] md:text-[5.625rem] md:tracking-[-0.16875rem]'
   const sloganClassName =
-    'Hero-slogan text-xl leading-none lg:text-3xl md:text-3xl'
+    'Hero-slogan text-xl leading-none lg:w-[18.6875rem] lg:text-3xl md:text-3xl'
 
   return (
     <div className="Hero-wrapper relative h-[1000vh]">
