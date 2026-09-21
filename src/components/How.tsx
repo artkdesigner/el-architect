@@ -52,8 +52,8 @@ function How() {
         })
         .to(words, {
           x: 0,
-          stagger: 1,
-          duration: 3,
+          stagger: 0.7,
+          duration: 13,
           ease: 'power2.out',
         })
     }, sectionRef)
