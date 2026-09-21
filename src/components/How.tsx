@@ -1,4 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const LINES = [
   "My method is not a style. It's a principle of response.",
@@ -16,83 +20,75 @@ const WORDS = LINES.flatMap((line, lineIndex) => {
 })
 
 function How() {
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef<HTMLElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
 
   useLayoutEffect(() => {
-    let frame = 0
-    const words = wordRefs.current
-    const wordCount = words.length
+    const words = wordRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null,
+    )
+    if (!sectionRef.current || words.length === 0) return
 
-    const update = () => {
-      const wrapper = wrapperRef.current
-      if (!wrapper || wordCount === 0) return
-
-      const viewportHeight = window.innerHeight
-      const scrollRoomPx = 4 * viewportHeight // 400vh
-      const triggerShift = 0.2 * viewportHeight // старт при видимости секции на 80%
-      const rect = wrapper.getBoundingClientRect()
-      const scrolledPx = Math.min(
-        Math.max(triggerShift - rect.top, 0),
-        scrollRoomPx,
-      )
-      const progress = scrolledPx / scrollRoomPx
-
-      words.forEach((el, index) => {
-        if (!el) return
-        const wordProgress = Math.min(
-          Math.max(progress * wordCount - index, 0),
-          1,
-        )
-        el.style.transform = `translateX(${(1 - wordProgress) * 100}vw)`
-      })
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (reduceMotion) {
+      gsap.set(words, { x: 0 })
+      return
     }
 
-    const onScroll = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(update)
-    }
+    gsap.set(words, { x: '100vw' })
 
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
+    const ctx = gsap.context(() => {
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 20%', // старт, когда секция видна на 80%
+            end: '+=400%', // 400vh на анимацию
+            scrub: 0.5,
+            pin: true,
+          },
+        })
+        .to(words, {
+          x: 0,
+          stagger: 1,
+          duration: 3,
+          ease: 'power2.out',
+        })
+    }, sectionRef)
+
+    return () => ctx.revert()
   }, [])
 
   let wordIndex = 0
 
   return (
-    <div ref={wrapperRef} className="How-wrapper relative h-[500vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-ink">
-        <section className="How flex h-full items-start px-4 pt-58 md:px-5 md:pt-78">
-          <p className="How-paragraph text-[2rem] leading-[1.18] tracking-[-0.1rem] text-white md:text-[2.5rem] md:tracking-[-0.125rem]">
-            {WORDS.map((token, i) => {
-              if (token.type === 'break') {
-                return <br key={i} className="hidden lg:inline" />
-              }
-              const index = wordIndex++
-              return (
-                <span key={i}>
-                  <span
-                    ref={(el) => {
-                      wordRefs.current[index] = el
-                    }}
-                    className="inline-block"
-                    style={{ transform: 'translateX(100vw)' }}
-                  >
-                    {token.word}
-                  </span>{' '}
-                </span>
-              )
-            })}
-          </p>
-        </section>
-      </div>
-    </div>
+    <section
+      ref={sectionRef}
+      className="How flex h-screen items-start bg-ink px-4 pt-58 md:px-5 md:pt-78"
+    >
+      <p className="How-paragraph text-[2rem] leading-[1.18] tracking-[-0.1rem] text-white md:text-[2.5rem] md:tracking-[-0.125rem]">
+        {WORDS.map((token, i) => {
+          if (token.type === 'break') {
+            return <br key={i} className="hidden lg:inline" />
+          }
+          const index = wordIndex++
+          return (
+            <span key={i}>
+              <span
+                ref={(el) => {
+                  wordRefs.current[index] = el
+                }}
+                className="inline-block"
+              >
+                {token.word}
+              </span>{' '}
+            </span>
+          )
+        })}
+      </p>
+    </section>
   )
 }
 

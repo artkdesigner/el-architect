@@ -145,7 +145,9 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
       if (cancelled || !viewportRef.current || !contentBlackRef.current) return
 
       const containerHeight = viewportRef.current.clientHeight
-      const contentTop = contentBlackRef.current.offsetTop
+      const viewportTop = viewportRef.current.getBoundingClientRect().top
+      const contentTop =
+        contentBlackRef.current.getBoundingClientRect().top - viewportTop
 
       tl = gsap
         .timeline({ defaults: { ease: 'power3.out' } })
