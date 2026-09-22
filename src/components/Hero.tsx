@@ -167,7 +167,7 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
             whiteOverlay.style.clipPath = `inset(${clip}px 0 0 0)`
           },
         })
-        .to(masks, { clipPath: 'inset(0 0 0 0)', duration: 0.5, stagger: 0.1 })
+        .to(masks, { clipPath: 'inset(0 0 0 0)', duration: 1, stagger: 0.2 })
         .to(burgerLines, { scaleX: 1, duration: 0.4, stagger: 0.15 }, '<')
     })
 
