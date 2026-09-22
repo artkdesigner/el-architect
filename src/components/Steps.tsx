@@ -65,24 +65,47 @@ const STEPS: Step[] = [
 
 gsap.registerPlugin(ScrollTrigger)
 
-const STACK_WIDTH = '38.375rem' // 614px — целевая ширина steps-card-img
+// Константы макета (px в референсной ширине 1920, см. get_metadata по кадрам
+// Steps-01..Steps-09) переводятся в rem при использовании в className, и в px
+// через текущий rootFontSize при использовании в GSAP-трансформах.
+const CARD_W_REM = 38.375 // 614px
+const ROW_REM = 22.8125 // 365px = высота карточки + 20px гап — шаг наезда/смещения карточек
+const NAME_STEP_REM = 2.5 // 40px — шаг оседания имени/года в накопленном стеке
+const NAME_WAIT_BASE_REM = 50.25 // 804px — стартовая (нижняя, «в очереди») позиция первого имени/года
+const CARDS_TOP_REM = 22.96875 // 367.5px — верх области карточек, центр по вертикали вьюпорта
+const TITLE_EXIT_REM = -41.0625 // -657px — насколько title-wrap уезжает вверх при выходе
 
 function Steps() {
   const introWrapperRef = useRef<HTMLDivElement>(null)
   const titleWrapRef = useRef<HTMLDivElement>(null)
   const titleLeftRef = useRef<HTMLParagraphElement>(null)
   const titleRightRef = useRef<HTMLParagraphElement>(null)
-  const stackRef = useRef<HTMLDivElement>(null)
   const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const cardsShiftRef = useRef<HTMLDivElement>(null)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const imgWrapRefs = useRef<(HTMLDivElement | null)[]>([])
+  const descRefs = useRef<(HTMLParagraphElement | null)[]>([])
+  const nameListWrapRef = useRef<HTMLDivElement>(null)
+  const yearListWrapRef = useRef<HTMLDivElement>(null)
+  const nameRefs = useRef<(HTMLParagraphElement | null)[]>([])
+  const yearRefs = useRef<(HTMLParagraphElement | null)[]>([])
 
-  // Пиновая интро-сцена Steps:
-  // 1) буквы Steps-title-wrap поднимаются из-за маски (yPercent 100 -> 0) и
-  //    проявляются по opacity;
-  // 2) когда все буквы появились — Steps-title-left/-right расходятся к
-  //    краям своего родителя (Steps-title-wrap), а между ними растёт в
-  //    ширину (0 -> 100%) стопка steps-card-img (все шесть наложены друг на
-  //    друга в одной точке).
-  // Всё завязано на скролл (scrub), не на время.
+  // Пиновая сцена Steps целиком, по скроллу (scrub), без фиксированной
+  // длительности:
+  //  A. буквы Steps-title-wrap поднимаются из-за маски и проявляются;
+  //  B. title-left/-right расходятся к краям контейнера, все 6 steps-card-img
+  //     одновременно растут в ширину 0 -> 100% (наложены друг на друга);
+  //  C. карточки 1..5 разъезжаются вниз (карточка 0 остаётся на месте),
+  //     title-wrap уезжает вверх и гаснет до 20% (гаснет к моменту, когда
+  //     пересекает верхнюю границу секции), проявляются name-list/year-list
+  //     и description первой карточки, имя/год первой карточки оседают и
+  //     становятся активными (opacity 100%);
+  //  D. цикл на каждую следующую карточку (i=1..5): предыдущая карточка
+  //     уезжает вверх на ROW (общим сдвигом ленты), её img гаснет до 20%,
+  //     description исчезает; имя/год предыдущей гаснут до 20% (позиция не
+  //     меняется); новая карточка становится активной (img/description ->
+  //     100%), её имя/год приезжают в свою ячейку накопленного стека и
+  //     становятся активными (opacity 100%).
   useLayoutEffect(() => {
     const letters = titleLetterRefs.current.filter(
       (el): el is HTMLSpanElement => el !== null,
@@ -91,29 +114,77 @@ function Steps() {
     const titleWrap = titleWrapRef.current
     const titleLeft = titleLeftRef.current
     const titleRight = titleRightRef.current
-    const stack = stackRef.current
+    const cardsShift = cardsShiftRef.current
+    const cards = cardRefs.current
+    const imgWraps = imgWrapRefs.current
+    const descs = descRefs.current
+    const names = nameRefs.current
+    const years = yearRefs.current
+    const nameListWrap = nameListWrapRef.current
+    const yearListWrap = yearListWrapRef.current
+
     if (
       !wrapperEl ||
       !titleWrap ||
       !titleLeft ||
       !titleRight ||
-      !stack ||
-      letters.length === 0
+      !cardsShift ||
+      !nameListWrap ||
+      !yearListWrap ||
+      letters.length === 0 ||
+      cards.some((el) => el === null) ||
+      imgWraps.some((el) => el === null) ||
+      descs.some((el) => el === null) ||
+      names.some((el) => el === null) ||
+      years.some((el) => el === null)
     ) {
       return
     }
+
+    const lastIndex = STEPS.length - 1
 
     const reduceMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
     if (reduceMotion) {
       gsap.set(letters, { yPercent: 0, opacity: 1 })
-      gsap.set(stack, { width: STACK_WIDTH })
+      gsap.set(titleWrap, { opacity: 0.2 })
+      gsap.set(imgWraps, { width: `${CARD_W_REM}rem` })
+      gsap.set(cards, { y: 0 })
+      gsap.set(cardsShift, { y: `-${lastIndex * ROW_REM}rem` })
+      imgWraps.forEach((el, i) =>
+        gsap.set(el, { opacity: i === lastIndex ? 1 : 0.2 }),
+      )
+      descs.forEach((el, i) =>
+        gsap.set(el, { opacity: i === lastIndex ? 1 : 0 }),
+      )
+      gsap.set(nameListWrap, { opacity: 1 })
+      gsap.set(yearListWrap, { opacity: 1 })
+      names.forEach((el, i) =>
+        gsap.set(el, {
+          top: `${i * NAME_STEP_REM}rem`,
+          opacity: i === lastIndex ? 1 : 0.2,
+        }),
+      )
+      years.forEach((el, i) =>
+        gsap.set(el, {
+          top: `${i * NAME_STEP_REM}rem`,
+          opacity: i === lastIndex ? 1 : 0.2,
+        }),
+      )
       return
     }
 
     gsap.set(letters, { yPercent: 100, opacity: 0 })
-    gsap.set(stack, { width: 0 })
+    gsap.set(imgWraps, { width: 0 })
+    gsap.set(imgWraps.slice(1), { opacity: 0.2 })
+    gsap.set(descs, { opacity: 0 })
+    gsap.set(cards, { y: 0 })
+    gsap.set(cardsShift, { y: 0 })
+    gsap.set(nameListWrap, { opacity: 0 })
+    gsap.set(yearListWrap, { opacity: 0 })
+    gsap.set(names, { opacity: 0.2 })
+    gsap.set(years, { opacity: 0.2 })
 
     let cancelled = false
     let ctx: gsap.Context | undefined
@@ -121,15 +192,22 @@ function Steps() {
     document.fonts.ready.then(() => {
       if (cancelled) return
 
-      // Стартовое состояние step 1: title-left/-right сведены к центру
-      // (визуально с gap-5 между ними), хотя раскладка (justify-between) уже
-      // финальная — двигаем их transform'ом от центра к их естественным
-      // местам у краёв Steps-title-wrap.
       const rootFontSize = parseFloat(
         getComputedStyle(document.documentElement).fontSize,
       )
-      const gapPx = rootFontSize * 1.25 // gap-5
+      const px = (rem: number) => rem * rootFontSize
 
+      // Стартовое положение имён/годов — «в очереди», внизу списка.
+      gsap.set(names, {
+        top: (i) => `${NAME_WAIT_BASE_REM + i * NAME_STEP_REM}rem`,
+      })
+      gsap.set(years, {
+        top: (i) => `${NAME_WAIT_BASE_REM + i * NAME_STEP_REM}rem`,
+      })
+
+      // Стартовое состояние title-left/-right: сведены к центру (как в
+      // предыдущем шаге), раскладка justify-between уже финальная.
+      const gapPx = rootFontSize * 1.25 // gap-5
       const wrapRect = titleWrap.getBoundingClientRect()
       const leftRect = titleLeft.getBoundingClientRect()
       const rightRect = titleRight.getBoundingClientRect()
@@ -138,38 +216,130 @@ function Steps() {
       const leftStartX = centeredLeftX - leftRect.left
       const rightStartX =
         centeredLeftX + leftRect.width + gapPx - rightRect.left
-
       gsap.set(titleLeft, { x: leftStartX })
       gsap.set(titleRight, { x: rightStartX })
 
       ctx = gsap.context(() => {
-        gsap
-          .timeline({
-            scrollTrigger: {
-              trigger: wrapperEl,
-              start: 'top top',
-              end: '+=250%',
-              scrub: 0.5,
-              pin: true,
-            },
-          })
-          .to(letters, {
-            yPercent: 0,
-            opacity: 1,
-            stagger: 0.05,
-            ease: 'power2.out',
-            duration: 1,
-          })
-          .to([titleLeft, titleRight], {
-            x: 0,
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: wrapperEl,
+            start: 'top top',
+            end: '+=850%',
+            scrub: 0.5,
+            pin: true,
+          },
+        })
+
+        // A. буквы
+        tl.to(letters, {
+          yPercent: 0,
+          opacity: 1,
+          stagger: 0.05,
+          ease: 'power2.out',
+          duration: 1,
+        })
+
+        // B. title расходится к краям + все steps-card-img растут вместе
+        tl.to([titleLeft, titleRight], {
+          x: 0,
+          duration: 1,
+          ease: 'power2.inOut',
+        })
+        tl.to(
+          imgWraps,
+          { width: `${CARD_W_REM}rem`, duration: 1, ease: 'power2.inOut' },
+          '<',
+        )
+
+        // C. карточки 1..5 разъезжаются вниз; title уезжает вверх и гаснет;
+        // проявляются списки и первая карточка становится активной.
+        cards.forEach((card, i) => {
+          if (i === 0) return
+          tl.to(
+            card,
+            { y: px(i * ROW_REM), duration: 1, ease: 'power2.inOut' },
+            i === 1 ? undefined : '<',
+          )
+        })
+        tl.to(
+          titleWrap,
+          { y: px(TITLE_EXIT_REM), duration: 1, ease: 'power2.inOut' },
+          '<',
+        )
+        tl.to(
+          titleWrap,
+          { opacity: 0.2, duration: 0.66, ease: 'power1.out' },
+          '<',
+        )
+        tl.to([nameListWrap, yearListWrap], { opacity: 1, duration: 0.5 }, '<')
+        tl.to(
+          descs[0],
+          { opacity: 1, duration: 0.5, ease: 'power1.out' },
+          '<+=0.5',
+        )
+        tl.to(
+          names[0],
+          { top: 0, opacity: 1, duration: 0.5, ease: 'power1.out' },
+          '<',
+        )
+        tl.to(
+          years[0],
+          { top: 0, opacity: 1, duration: 0.5, ease: 'power1.out' },
+          '<',
+        )
+
+        // D. цикл по остальным карточкам: предыдущая уезжает и гаснет,
+        // следующая занимает её место и активируется.
+        for (let i = 1; i <= lastIndex; i++) {
+          const prev = i - 1
+          tl.to(cardsShift, {
+            y: px(-i * ROW_REM),
             duration: 1,
             ease: 'power2.inOut',
           })
-          .to(
-            stack,
-            { width: STACK_WIDTH, duration: 1, ease: 'power2.inOut' },
+          tl.to(
+            imgWraps[prev],
+            { opacity: 0.2, duration: 1, ease: 'power2.inOut' },
             '<',
           )
+          tl.to(
+            descs[prev],
+            { opacity: 0, duration: 1, ease: 'power2.inOut' },
+            '<',
+          )
+          tl.to(names[prev], { opacity: 0.2, duration: 1 }, '<')
+          tl.to(years[prev], { opacity: 0.2, duration: 1 }, '<')
+          tl.to(
+            imgWraps[i],
+            { opacity: 1, duration: 1, ease: 'power2.inOut' },
+            '<',
+          )
+          tl.to(
+            descs[i],
+            { opacity: 1, duration: 1, ease: 'power2.inOut' },
+            '<',
+          )
+          tl.to(
+            names[i],
+            {
+              top: `${i * NAME_STEP_REM}rem`,
+              opacity: 1,
+              duration: 1,
+              ease: 'power2.inOut',
+            },
+            '<',
+          )
+          tl.to(
+            years[i],
+            {
+              top: `${i * NAME_STEP_REM}rem`,
+              opacity: 1,
+              duration: 1,
+              ease: 'power2.inOut',
+            },
+            '<',
+          )
+        }
       }, wrapperEl)
     })
 
@@ -181,11 +351,11 @@ function Steps() {
 
   return (
     <section className="Steps hidden bg-ink lg:block">
-      <div ref={introWrapperRef} className="Steps-intro relative h-[250vh]">
-        <div className="sticky top-0 flex h-screen items-center justify-center px-5">
+      <div ref={introWrapperRef} className="Steps-intro relative h-[950vh]">
+        <div className="sticky top-0 h-screen overflow-hidden">
           <div
             ref={titleWrapRef}
-            className="Steps-title-wrap relative flex h-[13.125rem] w-[103.5rem] items-center justify-between leading-none tracking-[-0.5rem] text-white"
+            className="Steps-title-wrap absolute top-1/2 left-1/2 flex h-[13.125rem] w-[103.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-between leading-none tracking-[-0.5rem] text-white"
           >
             <p ref={titleLeftRef} className="Steps-title-left text-[10rem]">
               <LetterMask
@@ -196,24 +366,6 @@ function Steps() {
                 }}
               />
             </p>
-            <div
-              ref={stackRef}
-              className="Steps-card-stack absolute top-1/2 left-1/2 h-[21.5625rem] w-0 -translate-x-1/2 -translate-y-1/2 overflow-hidden"
-            >
-              {STEPS.map((step, index) => (
-                <div
-                  key={step.name}
-                  className="steps-card-img absolute inset-0"
-                  style={{ zIndex: index + 1 }}
-                >
-                  <img
-                    src={step.image}
-                    alt={`Проект «${step.name}», ${step.year}`}
-                    className={`size-full object-cover ${step.imageClassName ?? ''}`}
-                  />
-                </div>
-              ))}
-            </div>
             <p ref={titleRightRef} className="Steps-title-right text-[10rem]">
               <LetterMask
                 text="Taken"
@@ -224,33 +376,83 @@ function Steps() {
               />
             </p>
           </div>
-        </div>
-      </div>
 
-      <div className="Steps-card-list flex w-full flex-col gap-5 px-5 pb-20">
-        {STEPS.map((step) => (
-          <div key={step.name} className="Steps-row flex items-center gap-5">
-            <p className="Steps-card-name w-[38.3125rem] shrink-0 text-[2.25rem] leading-none text-white">
-              {step.name}
-            </p>
-            <div className="Steps-card flex shrink-0 items-start gap-5">
-              <div className="steps-card-img h-[21.5625rem] w-[38.375rem] shrink-0 overflow-hidden">
-                <img
-                  src={step.image}
-                  alt={`Проект «${step.name}», ${step.year}`}
-                  className={`size-full object-cover ${step.imageClassName ?? ''}`}
-                  loading="lazy"
-                />
-              </div>
-              <p className="Steps-card-description w-[18.5rem] shrink-0 indent-[2.25rem] text-[1rem] leading-[1.2] tracking-[-0.03rem] text-white">
-                {step.description}
+          <div
+            ref={nameListWrapRef}
+            className="Steps-card-name-list absolute top-5 left-5 h-[65rem] w-[38.3125rem]"
+          >
+            {STEPS.map((step, i) => (
+              <p
+                key={step.name}
+                ref={(el) => {
+                  nameRefs.current[i] = el
+                }}
+                className="Steps-card-name absolute left-0 text-[2.25rem] leading-none text-white"
+              >
+                {step.name}
               </p>
-            </div>
-            <p className="Steps-card-year flex-1 text-right text-[2.5rem] leading-none tracking-[-0.125rem] text-white">
-              {step.year}
-            </p>
+            ))}
           </div>
-        ))}
+
+          <div
+            className="Steps-cards absolute left-1/2 -translate-x-1/2"
+            style={{ top: `${CARDS_TOP_REM}rem` }}
+          >
+            <div
+              ref={cardsShiftRef}
+              className="Steps-cards-shift relative h-[21.5625rem] w-[38.375rem]"
+            >
+              {STEPS.map((step, i) => (
+                <div
+                  key={step.name}
+                  ref={(el) => {
+                    cardRefs.current[i] = el
+                  }}
+                  className="Steps-card absolute top-0 left-0 flex items-start gap-5"
+                  style={{ zIndex: STEPS.length - i }}
+                >
+                  <div
+                    ref={(el) => {
+                      imgWrapRefs.current[i] = el
+                    }}
+                    className="steps-card-img h-[21.5625rem] w-0 shrink-0 overflow-hidden"
+                  >
+                    <img
+                      src={step.image}
+                      alt={`Проект «${step.name}», ${step.year}`}
+                      className={`size-full object-cover ${step.imageClassName ?? ''}`}
+                    />
+                  </div>
+                  <p
+                    ref={(el) => {
+                      descRefs.current[i] = el
+                    }}
+                    className="Steps-card-description w-[18.5rem] shrink-0 indent-[2.25rem] text-[1rem] leading-[1.2] tracking-[-0.03rem] text-white"
+                  >
+                    {step.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            ref={yearListWrapRef}
+            className="Steps-card-year-list absolute top-5 right-5 h-[65rem] w-[38.3125rem] text-right"
+          >
+            {STEPS.map((step, i) => (
+              <p
+                key={step.name}
+                ref={(el) => {
+                  yearRefs.current[i] = el
+                }}
+                className="Steps-card-year absolute right-0 text-[2.5rem] leading-none tracking-[-0.125rem] text-white"
+              >
+                {step.year}
+              </p>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
