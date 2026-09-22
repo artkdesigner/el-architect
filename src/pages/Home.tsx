@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import How from '../components/How'
+import Steps from '../components/Steps'
 
 function Home() {
   const logoMaskRef = useRef<HTMLDivElement | null>(null)
@@ -22,6 +23,7 @@ function Home() {
           navbarBurgerLineRefs={[burgerLine1Ref, burgerLine2Ref]}
         />
         <How />
+        <Steps />
       </main>
     </>
   )
