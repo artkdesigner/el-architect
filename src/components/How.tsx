@@ -44,7 +44,7 @@ function How() {
         .timeline({
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top 20%', // старт, когда секция видна на 80%
+            start: 'top top', // пин ровно у верха вьюпорта, без зазора
             end: '+=400%', // 400vh на анимацию
             scrub: 0.5,
             pin: true,
