@@ -122,7 +122,7 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
     gsap.set(lines, { yPercent: 100 })
     gsap.set(img1, { yPercent: 100 })
     gsap.set(whiteOverlay, { clipPath: 'inset(100% 0 0 0)' })
-    gsap.set(masks, { clipPath: 'inset(0 0 100% 0)' })
+    gsap.set(masks, { clipPath: 'inset(0% 0% 100% 0%)' })
     gsap.set(burgerLines, { scaleX: 0 })
 
     const reduceMotion = window.matchMedia(
@@ -133,7 +133,7 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
       gsap.set(lines, { yPercent: 0 })
       gsap.set(img1, { yPercent: 0 })
       gsap.set(whiteOverlay, { clipPath: 'inset(0 0 0 0)' })
-      gsap.set(masks, { clipPath: 'inset(0 0 0 0)' })
+      gsap.set(masks, { clipPath: 'inset(0% 0% 0% 0%)' })
       gsap.set(burgerLines, { scaleX: 1 })
       return
     }
@@ -167,7 +167,12 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
             whiteOverlay.style.clipPath = `inset(${clip}px 0 0 0)`
           },
         })
-        .to(masks, { clipPath: 'inset(0 0 0 0)', duration: 1, stagger: 0.2 })
+        .to(masks, {
+          clipPath: 'inset(0% 0% 0% 0%)',
+          duration: 1,
+          stagger: 0.2,
+          ease: 'power1.inOut',
+        })
         .to(burgerLines, { scaleX: 1, duration: 0.4, stagger: 0.15 }, '<')
     })
 
