@@ -233,7 +233,7 @@ function Steps() {
 
   return (
     <>
-      <section className="Steps hidden bg-ink lg:block">
+      <section className="Steps -mt-[50vh] hidden bg-ink lg:block">
         <div ref={introWrapperRef} className="Steps-intro relative h-screen">
           <div className="sticky top-0 h-screen overflow-hidden">
             <div
@@ -267,7 +267,7 @@ function Steps() {
 
             <div
               ref={nameListWrapRef}
-              className="Steps-card-name-list absolute bottom-5 left-5 h-[65rem] w-[38.3125rem]"
+              className="Steps-card-name-list absolute top-5 bottom-5 left-5 w-[38.3125rem]"
             >
               {STEPS.map((step, i) => (
                 <p
@@ -325,7 +325,7 @@ function Steps() {
 
             <div
               ref={yearListWrapRef}
-              className="Steps-card-year-list absolute bottom-5 right-5 h-[65rem] w-[38.3125rem] text-right"
+              className="Steps-card-year-list absolute top-5 bottom-5 right-5 w-[38.3125rem] text-right"
             >
               {STEPS.map((step, i) => (
                 <p
@@ -343,7 +343,7 @@ function Steps() {
         </div>
       </section>
 
-      <section className="Steps-tablet hidden bg-ink md:block lg:hidden">
+      <section className="Steps-tablet -mt-[50vh] hidden bg-ink md:block lg:hidden">
         <div ref={introWrapperRefT} className="Steps-intro relative h-screen">
           <div className="sticky top-0 h-screen overflow-hidden">
             <div
@@ -442,7 +442,7 @@ function Steps() {
         </div>
       </section>
 
-      <section className="Steps-mobile block bg-ink md:hidden">
+      <section className="Steps-mobile -mt-[50vh] block bg-ink md:hidden">
         <div ref={introWrapperRefM} className="Steps-intro relative h-screen">
           <div className="sticky top-0 h-screen overflow-hidden">
             <div

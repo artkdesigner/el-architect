@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
@@ -19,8 +20,11 @@ const WORDS = LINES.flatMap((line, lineIndex) => {
     : words
 })
 
-function How() {
-  const sectionRef = useRef<HTMLElement>(null)
+interface HowProps {
+  sectionRef: RefObject<HTMLElement | null>
+}
+
+function How({ sectionRef }: HowProps) {
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
 
   useLayoutEffect(() => {
@@ -45,7 +49,7 @@ function How() {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: 'top top', // пин ровно у верха вьюпорта, без зазора
-            end: '+=400%', // 400vh на анимацию
+            end: '+=200%', // 200vh на анимацию
             scrub: 0.5,
             pin: true,
           },
@@ -66,7 +70,7 @@ function How() {
   return (
     <section
       ref={sectionRef}
-      className="How flex h-screen items-start bg-ink px-4 pt-58 md:px-5 md:pt-78"
+      className="How -mt-[100vh] flex h-screen items-start bg-ink px-4 pt-58 md:px-5 md:pt-78"
     >
       <p className="How-paragraph text-[2rem] leading-[1.18] tracking-[-0.1rem] text-white md:text-[2.5rem] md:tracking-[-0.125rem]">
         {WORDS.map((token, i) => {

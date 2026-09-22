@@ -24,16 +24,23 @@ interface HeroProps {
     RefObject<HTMLSpanElement | null>,
     RefObject<HTMLSpanElement | null>,
   ]
+  howSectionRef: RefObject<HTMLElement | null>
 }
 
-function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
+function Hero({
+  navbarMaskRefs,
+  navbarBurgerLineRefs,
+  howSectionRef,
+}: HeroProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const contentBlackRef = useRef<HTMLDivElement>(null)
   const contentWhiteRef = useRef<HTMLDivElement>(null)
   const heroImg1Ref = useRef<HTMLDivElement>(null)
   const heroImg1OverlayRef = useRef<HTMLDivElement>(null)
+  const heroImg1ImgRef = useRef<HTMLImageElement>(null)
   const cascadeRefs = useRef<(HTMLDivElement | null)[]>([])
   const cascadeOverlayRefs = useRef<(HTMLDivElement | null)[]>([])
+  const cascadeImgRefs = useRef<(HTMLImageElement | null)[]>([])
   const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
   const sloganLineRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [logoMaskRef, ctaMaskRef] = navbarMaskRefs
@@ -146,9 +153,29 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
       const stepProgressAt = (index: number) =>
         Math.min(Math.max(scrolledPx / window.innerHeight - index, 0), 1)
 
+      // Прогресс наезда секции How на Hero (0 — How ещё за нижней границей
+      // экрана, 1 — How дошла до верхней границы, полностью накрыв Hero).
+      // Используем его вместо "следующего слоя" для последней hero-img,
+      // у которой в самом каскаде нет следующей картинки, которая её крыла бы.
+      const howEl = howSectionRef.current
+      const howOverlapProgress = howEl
+        ? Math.min(
+            Math.max(
+              (window.innerHeight - howEl.getBoundingClientRect().top) /
+                window.innerHeight,
+              0,
+            ),
+            1,
+          )
+        : 0
+
       const heroImg1Overlay = heroImg1OverlayRef.current
       if (heroImg1Overlay) {
         heroImg1Overlay.style.opacity = String(stepProgressAt(0) * 0.5)
+      }
+      const heroImg1Img = heroImg1ImgRef.current
+      if (heroImg1Img) {
+        heroImg1Img.style.transform = `scale(${1.2 - stepProgressAt(0) * 0.2})`
       }
 
       cascadeRefs.current.forEach((el, index) => {
@@ -157,11 +184,21 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
         el.style.transform = `translateY(${(1 - stepProgress) * 100}%)`
 
         // Оверлей на ЭТОМ слое темнеет по мере того, как следующая картинка
-        // наезжает на него (0 -> 50% Dark), а не по своему собственному прогрессу.
+        // наезжает на него (0 -> 50% Dark), а не по своему собственному
+        // прогрессу. У последней картинки роль "следующего слоя" играет
+        // наезжающая секция How.
+        const nextProgress =
+          index + 1 < steps ? stepProgressAt(index + 1) : howOverlapProgress
         const overlay = cascadeOverlayRefs.current[index]
         if (overlay) {
-          const nextProgress = index + 1 < steps ? stepProgressAt(index + 1) : 0
           overlay.style.opacity = String(nextProgress * 0.5)
+        }
+
+        // Аналогично — сама картинка скейлится 120% -> 100% по мере того,
+        // как следующий слой наезжает на неё.
+        const img = cascadeImgRefs.current[index]
+        if (img) {
+          img.style.transform = `scale(${1.2 - nextProgress * 0.2})`
         }
       })
     }
@@ -189,7 +226,7 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
     'Hero-slogan text-xl leading-none lg:w-[18.6875rem] lg:-translate-y-[0.473rem] lg:text-[2rem] md:text-[2rem]'
 
   return (
-    <div className="Hero-wrapper relative h-[300vh]">
+    <div className="Hero-wrapper relative h-[400vh]">
       <div
         ref={viewportRef}
         className="sticky top-0 h-screen overflow-hidden bg-white"
@@ -238,9 +275,11 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
             className="Hero-img-1 absolute inset-0 z-[1] overflow-hidden"
           >
             <img
+              ref={heroImg1ImgRef}
               src={heroImg1}
               alt="Жилой комплекс E.L. Architect с террасами и панорамным остеклением на фоне неба"
               className="absolute top-0 left-[-61.33%] h-full w-[387.96%] max-w-none object-cover md:left-[-5.14%] md:w-[238.89%] lg:left-[-0.02%] lg:w-[100.03%]"
+              style={{ transform: 'scale(1.2)' }}
               fetchPriority="high"
             />
             <div
@@ -256,13 +295,17 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
               ref={(el) => {
                 cascadeRefs.current[index] = el
               }}
-              className="Hero-img absolute inset-0"
+              className="Hero-img absolute inset-0 overflow-hidden"
               style={{ zIndex: index + 2, transform: 'translateY(100%)' }}
             >
               <img
+                ref={(el) => {
+                  cascadeImgRefs.current[index] = el
+                }}
                 src={src}
                 alt={`Проект E.L. Architect, вид ${index + 2}`}
                 className="absolute inset-0 size-full max-w-none object-cover"
+                style={{ transform: 'scale(1.2)' }}
                 loading="lazy"
               />
               <div

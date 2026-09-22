@@ -166,12 +166,31 @@ export function useStepsScene(
       )
       const px = (rem: number) => rem * rootFontSize
 
-      // Стартовое положение имён/годов — «в очереди», внизу списка.
+      // Стартовое положение имён/годов — «в очереди», внизу списка. Нижний
+      // (последний) элемент должен стоять вплотную к нижней границе своего
+      // контейнера (у которого, в свою очередь, уже есть отступ от края
+      // экрана в разметке, напр. bottom-5) — считаем базу от РЕАЛЬНОЙ высоты
+      // контейнера и последнего элемента, а не от статичной Figma-константы,
+      // иначе при высоте контейнера, отличной от Figma-референса, последний
+      // элемент уезжает выше/ниже нужного отступа.
+      const nameStepPx = px(nameStepRem)
+      const lastName = names[lastIndex]
+      const lastYear = years[lastIndex]
+      const namesWaitBasePx = lastName
+        ? nameListWrap.getBoundingClientRect().height -
+          lastName.getBoundingClientRect().height -
+          lastIndex * nameStepPx
+        : px(nameWaitBaseRem)
+      const yearsWaitBasePx = lastYear
+        ? yearListWrap.getBoundingClientRect().height -
+          lastYear.getBoundingClientRect().height -
+          lastIndex * nameStepPx
+        : px(nameWaitBaseRem)
       gsap.set(names, {
-        top: (i) => `${nameWaitBaseRem + i * nameStepRem}rem`,
+        top: (i) => `${namesWaitBasePx + i * nameStepPx}px`,
       })
       gsap.set(years, {
-        top: (i) => `${nameWaitBaseRem + i * nameStepRem}rem`,
+        top: (i) => `${yearsWaitBasePx + i * nameStepPx}px`,
       })
 
       // Стартовое состояние title-left/-right: сведены к центру, раскладка
@@ -222,57 +241,91 @@ export function useStepsScene(
         )
 
         // C. карточки 1..N-1 разъезжаются вниз; title уезжает вверх и гаснет.
+        // Лейбл вместо '<'/undefined — иначе tl.to() возвращает саму
+        // таймлинию (не твин), и .startTime() у неё не даёт реальный старт
+        // этого твина внутри tl.
+        tl.addLabel('cardsSpreadStart')
         cards.forEach((card, i) => {
           if (i === 0) return
           tl.to(
             card,
             { y: px(i * rowRem), duration: 1, ease: 'power2.inOut' },
-            i === 1 ? undefined : '<',
+            i === 1 ? 'cardsSpreadStart' : '<',
           )
         })
+        const titleExitDuration = 2
         tl.to(
           titleWrap,
-          { y: px(titleExitRem), duration: 2, ease: 'power2.inOut' },
-          '<',
+          {
+            y: px(titleExitRem),
+            duration: titleExitDuration,
+            ease: 'power2.inOut',
+          },
+          'cardsSpreadStart',
         )
         tl.to(
           titleWrap,
           { opacity: 0.2, duration: 1.32, ease: 'power1.out' },
-          '<',
+          'cardsSpreadStart',
         )
 
-        // только после того как карточки разъехались — проявляются списки
-        // имён/годов и описание первой карточки.
-        tl.to([nameListWrap, yearListWrap], { opacity: 1, duration: 0.5 })
+        // якорь: пауза и цикл карточек ниже продолжают идти от этой точки,
+        // как и раньше — момент проявления списков смещаем отдельно, не
+        // трогая остальной тайминг сцены.
+        tl.addLabel('afterTitleExit')
+
+        // Списки имён/годов и описание первой карточки проявляются, когда
+        // title-wrap проходит 50% своего пути (по времени тюина ухода).
+        const listRevealTime =
+          tl.labels.cardsSpreadStart + titleExitDuration * 0.5
+
+        // Плавно и равномерно, растянуто на весь уход title-wrap
+        // (titleExitDuration) — ease 'none' вместо 'power1.out': у power1.out
+        // почти вся видимая часть перехода из 0 в 1 всё равно происходит в
+        // первой трети времени, из-за чего появление всё равно читалось как
+        // резкое.
+        tl.to(
+          [nameListWrap, yearListWrap],
+          { opacity: 1, duration: titleExitDuration, ease: 'none' },
+          listRevealTime,
+        )
         if (hasDescription) {
           tl.to(
             descs[0],
-            { opacity: 1, duration: 0.5, ease: 'power1.out' },
-            '<',
+            { opacity: 1, duration: titleExitDuration, ease: 'none' },
+            listRevealTime,
           )
         }
 
-        // и только затем имя/год первой карточки оседают на финальную позицию.
-        tl.to(names[0], {
-          top: `${nameStopRem}rem`,
-          opacity: 1,
-          duration: 0.5,
-          ease: 'power1.out',
-        })
+        // Имя/год первой карточки начинают ехать на финальную позицию только
+        // ПОСЛЕ того, как списки/описание полностью проявились (не
+        // одновременно с ними) — по просьбе пользователя. Скорость — та же,
+        // что у остальных карточек в цикле ниже (duration: 1, power2.inOut).
+        const nameSettleTime = listRevealTime + titleExitDuration
+        tl.to(
+          names[0],
+          {
+            top: `${nameStopRem}rem`,
+            opacity: 1,
+            duration: 1,
+            ease: 'power2.inOut',
+          },
+          nameSettleTime,
+        )
         tl.to(
           years[0],
           {
             top: `${nameStopRem}rem`,
             opacity: 1,
-            duration: 0.5,
-            ease: 'power1.out',
+            duration: 1,
+            ease: 'power2.inOut',
           },
-          '<',
+          nameSettleTime,
         )
 
         // пауза: первая карточка остаётся активной ещё +25vh скролла, прежде
         // чем начнётся переход ко второй.
-        tl.to({}, { duration: 0.2353 })
+        tl.to({}, { duration: 0.2353 }, 'afterTitleExit')
 
         // D. цикл по остальным карточкам: предыдущая уезжает и гаснет,
         // следующая занимает её место и активируется.

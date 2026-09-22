@@ -9,6 +9,7 @@ function Home() {
   const ctaMaskRef = useRef<HTMLDivElement | null>(null)
   const burgerLine1Ref = useRef<HTMLSpanElement | null>(null)
   const burgerLine2Ref = useRef<HTMLSpanElement | null>(null)
+  const howSectionRef = useRef<HTMLElement | null>(null)
 
   return (
     <>
@@ -21,8 +22,9 @@ function Home() {
         <Hero
           navbarMaskRefs={[logoMaskRef, ctaMaskRef]}
           navbarBurgerLineRefs={[burgerLine1Ref, burgerLine2Ref]}
+          howSectionRef={howSectionRef}
         />
-        <How />
+        <How sectionRef={howSectionRef} />
         <Steps />
       </main>
     </>
