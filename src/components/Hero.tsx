@@ -68,7 +68,12 @@ function Hero({ navbarMaskRefs, navbarBurgerLineRefs }: HeroProps) {
     const reduceMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
-    if (reduceMotion) {
+    // При перезагрузке страницы не на самом верху (например, после
+    // восстановления позиции скролла браузером) навбар уже должен быть
+    // раскрыт — интро проигрывается только когда мы реально стартуем с
+    // начала Hero.
+    const notOnFirstSection = window.scrollY > 0
+    if (reduceMotion || notOnFirstSection) {
       gsap.set(letters, { yPercent: 0 })
       gsap.set(lines, { yPercent: 0 })
       gsap.set(img1, { yPercent: 0 })
