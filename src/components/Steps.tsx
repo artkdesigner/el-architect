@@ -71,7 +71,7 @@ gsap.registerPlugin(ScrollTrigger)
 const ROW_REM = 22.8125 // 365px = высота карточки + 20px гап — шаг наезда/смещения карточек
 const NAME_STEP_REM = 2.5 // 40px — шаг оседания имени/года в накопленном стеке
 const NAME_WAIT_BASE_REM = 50.25 // 804px — стартовая (нижняя, «в очереди») позиция первого имени/года
-const TITLE_EXIT_REM = -41.0625 // -657px — насколько title-wrap уезжает вверх при выходе
+const TITLE_EXIT_REM = -47.3125 // -757px — насколько title-wrap уезжает вверх при выходе
 
 function Steps() {
   const introWrapperRef = useRef<HTMLDivElement>(null)
