@@ -4,6 +4,7 @@ import gsap from 'gsap'
 import heroImg1 from '../assets/hero-img-1.webp'
 import heroImg2 from '../assets/hero-img-2.webp'
 import heroImg3 from '../assets/hero-img-3.webp'
+import { LetterMask, LineMask } from '../lib/textMask'
 
 const TITLE = 'E.L.Architect'
 const SLOGAN_LINES = ['From Context', 'to Concept']
@@ -13,52 +14,6 @@ const SLOGAN_LINES = ['From Context', 'to Concept']
 // поверх предыдущего при скролле; у них нет авторского кропа под tablet/mobile,
 // поэтому используем object-cover.
 const CASCADE_IMAGES = [heroImg2, heroImg3]
-
-interface LetterMaskProps {
-  text: string
-  animated: boolean
-  registerRef?: (el: HTMLSpanElement | null, index: number) => void
-}
-
-function LetterMask({ text, animated, registerRef }: LetterMaskProps) {
-  return (
-    <>
-      {text.split('').map((char, index) => (
-        <span key={index} className="inline-block overflow-hidden">
-          <span
-            ref={animated ? (el) => registerRef?.(el, index) : undefined}
-            className="inline-block"
-          >
-            {char === ' ' ? ' ' : char}
-          </span>
-        </span>
-      ))}
-    </>
-  )
-}
-
-interface LineMaskProps {
-  lines: string[]
-  animated: boolean
-  registerRef?: (el: HTMLSpanElement | null, index: number) => void
-}
-
-function LineMask({ lines, animated, registerRef }: LineMaskProps) {
-  return (
-    <>
-      {lines.map((line, index) => (
-        <span key={index} className="block overflow-hidden">
-          <span
-            ref={animated ? (el) => registerRef?.(el, index) : undefined}
-            className="block"
-          >
-            {line}
-          </span>
-        </span>
-      ))}
-    </>
-  )
-}
 
 interface HeroProps {
   navbarMaskRefs: [

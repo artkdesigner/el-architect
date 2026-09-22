@@ -1,3 +1,7 @@
+import { useLayoutEffect, useRef } from 'react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { LetterMask } from '../lib/textMask'
 import stepsCard1 from '../assets/steps/steps-card-1.webp'
 import stepsCard2 from '../assets/steps/steps-card-2.webp'
 import stepsCard3 from '../assets/steps/steps-card-3.webp'
@@ -59,12 +63,73 @@ const STEPS: Step[] = [
   },
 ]
 
+gsap.registerPlugin(ScrollTrigger)
+
 function Steps() {
+  const titleWrapRef = useRef<HTMLDivElement>(null)
+  const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
+
+  // Steps-title-wrap: буквы поднимаются из-за нижнего края маски (yPercent
+  // 100 -> 0) и одновременно проявляются по opacity, по мере скролла секции
+  // в вьюпорт (scrub, не фиксированная длительность).
+  useLayoutEffect(() => {
+    const letters = titleLetterRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null,
+    )
+    if (!titleWrapRef.current || letters.length === 0) return
+
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (reduceMotion) {
+      gsap.set(letters, { yPercent: 0, opacity: 1 })
+      return
+    }
+
+    gsap.set(letters, { yPercent: 100, opacity: 0 })
+
+    const ctx = gsap.context(() => {
+      gsap.to(letters, {
+        yPercent: 0,
+        opacity: 1,
+        stagger: 0.05,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: titleWrapRef.current,
+          start: 'top 90%',
+          end: 'top 40%',
+          scrub: 0.5,
+        },
+      })
+    }, titleWrapRef)
+
+    return () => ctx.revert()
+  }, [])
+
   return (
     <section className="Steps hidden bg-ink px-5 lg:flex lg:flex-col lg:items-center lg:justify-center">
-      <div className="Steps-title-wrap flex items-center justify-center gap-5 pb-[3.125rem] leading-none tracking-[-0.5rem] text-white">
-        <p className="text-[10rem]">Steps</p>
-        <p className="text-[10rem]">Taken</p>
+      <div
+        ref={titleWrapRef}
+        className="Steps-title-wrap flex items-center justify-center gap-5 pb-[3.125rem] leading-none tracking-[-0.5rem] text-white"
+      >
+        <p className="text-[10rem]">
+          <LetterMask
+            text="Steps"
+            animated
+            registerRef={(el, i) => {
+              titleLetterRefs.current[i] = el
+            }}
+          />
+        </p>
+        <p className="text-[10rem]">
+          <LetterMask
+            text="Taken"
+            animated
+            registerRef={(el, i) => {
+              titleLetterRefs.current[5 + i] = el
+            }}
+          />
+        </p>
       </div>
 
       <div className="Steps-card-list flex w-full flex-col gap-5">
