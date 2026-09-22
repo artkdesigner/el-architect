@@ -9,21 +9,46 @@ interface LetterMaskProps {
   text: string
   animated: boolean
   registerRef?: (el: HTMLSpanElement | null, index: number) => void
+  // Оборачивать ли каждую букву в overflow-hidden маску (эффект «выезда
+  // снизу из-под маски»). false — буква анимируется видимой (без клиппинга),
+  // например для появления через opacity + y без маскирования.
+  mask?: boolean
+  // margin-left: -0.5rem на все буквы кроме первой — ручная компенсация
+  // межбуквенного расстояния, когда letter-spacing на обёртке выключен (0).
+  compress?: boolean
 }
 
-export function LetterMask({ text, animated, registerRef }: LetterMaskProps) {
+export function LetterMask({
+  text,
+  animated,
+  registerRef,
+  mask = true,
+  compress = false,
+}: LetterMaskProps) {
   return (
     <>
-      {text.split('').map((char, index) => (
-        <span key={index} className="inline-block overflow-hidden">
+      {text.split('').map((char, index) => {
+        const letter = (
           <span
             ref={animated ? (el) => registerRef?.(el, index) : undefined}
             className="inline-block"
           >
             {char === ' ' ? ' ' : char}
           </span>
-        </span>
-      ))}
+        )
+        const outerClassName = [
+          'inline-block',
+          mask && 'overflow-hidden',
+          compress && index > 0 && '-ml-[0.5rem]',
+        ]
+          .filter(Boolean)
+          .join(' ')
+        return (
+          <span key={index} className={outerClassName}>
+            {letter}
+          </span>
+        )
+      })}
     </>
   )
 }

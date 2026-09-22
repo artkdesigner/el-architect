@@ -68,11 +68,9 @@ gsap.registerPlugin(ScrollTrigger)
 // Константы макета (px в референсной ширине 1920, см. get_metadata по кадрам
 // Steps-01..Steps-09) переводятся в rem при использовании в className, и в px
 // через текущий rootFontSize при использовании в GSAP-трансформах.
-const CARD_W_REM = 38.375 // 614px
 const ROW_REM = 22.8125 // 365px = высота карточки + 20px гап — шаг наезда/смещения карточек
 const NAME_STEP_REM = 2.5 // 40px — шаг оседания имени/года в накопленном стеке
 const NAME_WAIT_BASE_REM = 50.25 // 804px — стартовая (нижняя, «в очереди») позиция первого имени/года
-const CARDS_TOP_REM = 22.96875 // 367.5px — верх области карточек, центр по вертикали вьюпорта
 const TITLE_EXIT_REM = -41.0625 // -657px — насколько title-wrap уезжает вверх при выходе
 
 function Steps() {
@@ -149,7 +147,7 @@ function Steps() {
     if (reduceMotion) {
       gsap.set(letters, { yPercent: 0, opacity: 1 })
       gsap.set(titleWrap, { opacity: 0.2 })
-      gsap.set(imgWraps, { width: `${CARD_W_REM}rem` })
+      gsap.set(imgWraps, { clipPath: 'inset(0% 0% 0% 0%)' })
       gsap.set(cards, { y: 0 })
       gsap.set(cardsShift, { y: `-${lastIndex * ROW_REM}rem` })
       imgWraps.forEach((el, i) =>
@@ -176,7 +174,7 @@ function Steps() {
     }
 
     gsap.set(letters, { yPercent: 100, opacity: 0 })
-    gsap.set(imgWraps, { width: 0 })
+    gsap.set(imgWraps, { clipPath: 'inset(0% 50% 0% 50%)' })
     gsap.set(imgWraps.slice(1), { opacity: 0.2 })
     gsap.set(descs, { opacity: 0 })
     gsap.set(cards, { y: 0 })
@@ -224,7 +222,7 @@ function Steps() {
           scrollTrigger: {
             trigger: wrapperEl,
             start: 'top top',
-            end: '+=850%',
+            end: '+=1062.5%',
             scrub: 0.5,
             pin: true,
           },
@@ -239,7 +237,10 @@ function Steps() {
           duration: 1,
         })
 
-        // B. title расходится к краям + все steps-card-img растут вместе
+        // B. title расходится к краям + все steps-card-img раскрываются из
+        // центра симметрично в обе стороны (clip-path вместо роста ширины,
+        // чтобы точка раскрытия совпадала с центром экрана, а не с левым
+        // краем карточки)
         tl.to([titleLeft, titleRight], {
           x: 0,
           duration: 1,
@@ -247,12 +248,16 @@ function Steps() {
         })
         tl.to(
           imgWraps,
-          { width: `${CARD_W_REM}rem`, duration: 1, ease: 'power2.inOut' },
+          {
+            clipPath: 'inset(0% 0% 0% 0%)',
+            duration: 1,
+            ease: 'power2.inOut',
+          },
           '<',
         )
 
-        // C. карточки 1..5 разъезжаются вниз; title уезжает вверх и гаснет;
-        // проявляются списки и первая карточка становится активной.
+        // C. карточки 1..5 разъезжаются вниз; title уезжает вверх (в 2 раза
+        // дольше, чтобы уход не был резким) и гаснет.
         cards.forEach((card, i) => {
           if (i === 0) return
           tl.to(
@@ -263,25 +268,31 @@ function Steps() {
         })
         tl.to(
           titleWrap,
-          { y: px(TITLE_EXIT_REM), duration: 1, ease: 'power2.inOut' },
+          { y: px(TITLE_EXIT_REM), duration: 2, ease: 'power2.inOut' },
           '<',
         )
         tl.to(
           titleWrap,
-          { opacity: 0.2, duration: 0.66, ease: 'power1.out' },
+          { opacity: 0.2, duration: 1.32, ease: 'power1.out' },
           '<',
         )
-        tl.to([nameListWrap, yearListWrap], { opacity: 1, duration: 0.5 }, '<')
+
+        // только после того как карточки разъехались — проявляются списки
+        // имён/годов и описание первой карточки.
+        tl.to([nameListWrap, yearListWrap], { opacity: 1, duration: 0.5 })
         tl.to(
           descs[0],
           { opacity: 1, duration: 0.5, ease: 'power1.out' },
-          '<+=0.5',
-        )
-        tl.to(
-          names[0],
-          { top: 0, opacity: 1, duration: 0.5, ease: 'power1.out' },
           '<',
         )
+
+        // и только затем имя/год первой карточки оседают на верхнюю позицию.
+        tl.to(names[0], {
+          top: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: 'power1.out',
+        })
         tl.to(
           years[0],
           { top: 0, opacity: 1, duration: 0.5, ease: 'power1.out' },
@@ -351,16 +362,18 @@ function Steps() {
 
   return (
     <section className="Steps hidden bg-ink lg:block">
-      <div ref={introWrapperRef} className="Steps-intro relative h-[950vh]">
+      <div ref={introWrapperRef} className="Steps-intro relative h-screen">
         <div className="sticky top-0 h-screen overflow-hidden">
           <div
             ref={titleWrapRef}
-            className="Steps-title-wrap absolute top-1/2 left-1/2 flex h-[13.125rem] w-[103.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-between leading-none tracking-[-0.5rem] text-white"
+            className="Steps-title-wrap absolute top-1/2 left-1/2 flex h-[13.125rem] w-[103.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-between leading-none tracking-[0em] text-white"
           >
             <p ref={titleLeftRef} className="Steps-title-left text-[10rem]">
               <LetterMask
                 text="Steps"
                 animated
+                mask={false}
+                compress
                 registerRef={(el, i) => {
                   titleLetterRefs.current[i] = el
                 }}
@@ -370,6 +383,8 @@ function Steps() {
               <LetterMask
                 text="Taken"
                 animated
+                mask={false}
+                compress
                 registerRef={(el, i) => {
                   titleLetterRefs.current[5 + i] = el
                 }}
@@ -379,7 +394,7 @@ function Steps() {
 
           <div
             ref={nameListWrapRef}
-            className="Steps-card-name-list absolute top-5 left-5 h-[65rem] w-[38.3125rem]"
+            className="Steps-card-name-list absolute bottom-5 left-5 h-[65rem] w-[38.3125rem]"
           >
             {STEPS.map((step, i) => (
               <p
@@ -394,10 +409,7 @@ function Steps() {
             ))}
           </div>
 
-          <div
-            className="Steps-cards absolute left-1/2 -translate-x-1/2"
-            style={{ top: `${CARDS_TOP_REM}rem` }}
-          >
+          <div className="Steps-cards absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div
               ref={cardsShiftRef}
               className="Steps-cards-shift relative h-[21.5625rem] w-[38.375rem]"
@@ -408,14 +420,14 @@ function Steps() {
                   ref={(el) => {
                     cardRefs.current[i] = el
                   }}
-                  className="Steps-card absolute top-0 left-0 flex items-start gap-5"
+                  className="Steps-card absolute top-0 left-0 flex h-[21.5625rem] items-start gap-5 bg-ink"
                   style={{ zIndex: STEPS.length - i }}
                 >
                   <div
                     ref={(el) => {
                       imgWrapRefs.current[i] = el
                     }}
-                    className="steps-card-img h-[21.5625rem] w-0 shrink-0 overflow-hidden"
+                    className="steps-card-img h-[21.5625rem] w-[38.375rem] shrink-0 overflow-hidden"
                   >
                     <img
                       src={step.image}
@@ -427,7 +439,7 @@ function Steps() {
                     ref={(el) => {
                       descRefs.current[i] = el
                     }}
-                    className="Steps-card-description w-[18.5rem] shrink-0 indent-[2.25rem] text-[1rem] leading-[1.2] tracking-[-0.03rem] text-white"
+                    className="Steps-card-description mt-5 w-[18.5rem] shrink-0 indent-[2.25rem] text-[1rem] leading-[1.2] tracking-[-0.03rem] text-white"
                   >
                     {step.description}
                   </p>
@@ -438,7 +450,7 @@ function Steps() {
 
           <div
             ref={yearListWrapRef}
-            className="Steps-card-year-list absolute top-5 right-5 h-[65rem] w-[38.3125rem] text-right"
+            className="Steps-card-year-list absolute bottom-5 right-5 h-[65rem] w-[38.3125rem] text-right"
           >
             {STEPS.map((step, i) => (
               <p
