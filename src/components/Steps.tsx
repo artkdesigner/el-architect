@@ -65,74 +65,169 @@ const STEPS: Step[] = [
 
 gsap.registerPlugin(ScrollTrigger)
 
+const STACK_WIDTH = '38.375rem' // 614px — целевая ширина steps-card-img
+
 function Steps() {
+  const introWrapperRef = useRef<HTMLDivElement>(null)
   const titleWrapRef = useRef<HTMLDivElement>(null)
+  const titleLeftRef = useRef<HTMLParagraphElement>(null)
+  const titleRightRef = useRef<HTMLParagraphElement>(null)
+  const stackRef = useRef<HTMLDivElement>(null)
   const titleLetterRefs = useRef<(HTMLSpanElement | null)[]>([])
 
-  // Steps-title-wrap: буквы поднимаются из-за нижнего края маски (yPercent
-  // 100 -> 0) и одновременно проявляются по opacity, по мере скролла секции
-  // в вьюпорт (scrub, не фиксированная длительность).
+  // Пиновая интро-сцена Steps:
+  // 1) буквы Steps-title-wrap поднимаются из-за маски (yPercent 100 -> 0) и
+  //    проявляются по opacity;
+  // 2) когда все буквы появились — Steps-title-left/-right расходятся к
+  //    краям своего родителя (Steps-title-wrap), а между ними растёт в
+  //    ширину (0 -> 100%) стопка steps-card-img (все шесть наложены друг на
+  //    друга в одной точке).
+  // Всё завязано на скролл (scrub), не на время.
   useLayoutEffect(() => {
     const letters = titleLetterRefs.current.filter(
       (el): el is HTMLSpanElement => el !== null,
     )
-    if (!titleWrapRef.current || letters.length === 0) return
+    const wrapperEl = introWrapperRef.current
+    const titleWrap = titleWrapRef.current
+    const titleLeft = titleLeftRef.current
+    const titleRight = titleRightRef.current
+    const stack = stackRef.current
+    if (
+      !wrapperEl ||
+      !titleWrap ||
+      !titleLeft ||
+      !titleRight ||
+      !stack ||
+      letters.length === 0
+    ) {
+      return
+    }
 
     const reduceMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
     if (reduceMotion) {
       gsap.set(letters, { yPercent: 0, opacity: 1 })
+      gsap.set(stack, { width: STACK_WIDTH })
       return
     }
 
     gsap.set(letters, { yPercent: 100, opacity: 0 })
+    gsap.set(stack, { width: 0 })
 
-    const ctx = gsap.context(() => {
-      gsap.to(letters, {
-        yPercent: 0,
-        opacity: 1,
-        stagger: 0.05,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: titleWrapRef.current,
-          start: 'top 90%',
-          end: 'top 40%',
-          scrub: 0.5,
-        },
-      })
-    }, titleWrapRef)
+    let cancelled = false
+    let ctx: gsap.Context | undefined
 
-    return () => ctx.revert()
+    document.fonts.ready.then(() => {
+      if (cancelled) return
+
+      // Стартовое состояние step 1: title-left/-right сведены к центру
+      // (визуально с gap-5 между ними), хотя раскладка (justify-between) уже
+      // финальная — двигаем их transform'ом от центра к их естественным
+      // местам у краёв Steps-title-wrap.
+      const rootFontSize = parseFloat(
+        getComputedStyle(document.documentElement).fontSize,
+      )
+      const gapPx = rootFontSize * 1.25 // gap-5
+
+      const wrapRect = titleWrap.getBoundingClientRect()
+      const leftRect = titleLeft.getBoundingClientRect()
+      const rightRect = titleRight.getBoundingClientRect()
+      const totalWidth = leftRect.width + gapPx + rightRect.width
+      const centeredLeftX = wrapRect.left + (wrapRect.width - totalWidth) / 2
+      const leftStartX = centeredLeftX - leftRect.left
+      const rightStartX =
+        centeredLeftX + leftRect.width + gapPx - rightRect.left
+
+      gsap.set(titleLeft, { x: leftStartX })
+      gsap.set(titleRight, { x: rightStartX })
+
+      ctx = gsap.context(() => {
+        gsap
+          .timeline({
+            scrollTrigger: {
+              trigger: wrapperEl,
+              start: 'top top',
+              end: '+=250%',
+              scrub: 0.5,
+              pin: true,
+            },
+          })
+          .to(letters, {
+            yPercent: 0,
+            opacity: 1,
+            stagger: 0.05,
+            ease: 'power2.out',
+            duration: 1,
+          })
+          .to([titleLeft, titleRight], {
+            x: 0,
+            duration: 1,
+            ease: 'power2.inOut',
+          })
+          .to(
+            stack,
+            { width: STACK_WIDTH, duration: 1, ease: 'power2.inOut' },
+            '<',
+          )
+      }, wrapperEl)
+    })
+
+    return () => {
+      cancelled = true
+      ctx?.revert()
+    }
   }, [])
 
   return (
-    <section className="Steps hidden bg-ink px-5 lg:flex lg:flex-col lg:items-center lg:justify-center">
-      <div
-        ref={titleWrapRef}
-        className="Steps-title-wrap flex items-center justify-center gap-5 pb-[3.125rem] leading-none tracking-[-0.5rem] text-white"
-      >
-        <p className="text-[10rem]">
-          <LetterMask
-            text="Steps"
-            animated
-            registerRef={(el, i) => {
-              titleLetterRefs.current[i] = el
-            }}
-          />
-        </p>
-        <p className="text-[10rem]">
-          <LetterMask
-            text="Taken"
-            animated
-            registerRef={(el, i) => {
-              titleLetterRefs.current[5 + i] = el
-            }}
-          />
-        </p>
+    <section className="Steps hidden bg-ink lg:block">
+      <div ref={introWrapperRef} className="Steps-intro relative h-[250vh]">
+        <div className="sticky top-0 flex h-screen items-center justify-center px-5">
+          <div
+            ref={titleWrapRef}
+            className="Steps-title-wrap relative flex h-[13.125rem] w-[103.5rem] items-center justify-between leading-none tracking-[-0.5rem] text-white"
+          >
+            <p ref={titleLeftRef} className="Steps-title-left text-[10rem]">
+              <LetterMask
+                text="Steps"
+                animated
+                registerRef={(el, i) => {
+                  titleLetterRefs.current[i] = el
+                }}
+              />
+            </p>
+            <div
+              ref={stackRef}
+              className="Steps-card-stack absolute top-1/2 left-1/2 h-[21.5625rem] w-0 -translate-x-1/2 -translate-y-1/2 overflow-hidden"
+            >
+              {STEPS.map((step, index) => (
+                <div
+                  key={step.name}
+                  className="steps-card-img absolute inset-0"
+                  style={{ zIndex: index + 1 }}
+                >
+                  <img
+                    src={step.image}
+                    alt={`Проект «${step.name}», ${step.year}`}
+                    className={`size-full object-cover ${step.imageClassName ?? ''}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <p ref={titleRightRef} className="Steps-title-right text-[10rem]">
+              <LetterMask
+                text="Taken"
+                animated
+                registerRef={(el, i) => {
+                  titleLetterRefs.current[5 + i] = el
+                }}
+              />
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="Steps-card-list flex w-full flex-col gap-5">
+      <div className="Steps-card-list flex w-full flex-col gap-5 px-5 pb-20">
         {STEPS.map((step) => (
           <div key={step.name} className="Steps-row flex items-center gap-5">
             <p className="Steps-card-name w-[38.3125rem] shrink-0 text-[2.25rem] leading-none text-white">
