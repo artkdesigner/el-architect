@@ -16,6 +16,11 @@ interface LetterMaskProps {
   // margin-left: -0.5rem на все буквы кроме первой — ручная компенсация
   // межбуквенного расстояния, когда letter-spacing на обёртке выключен (0).
   compress?: boolean
+  // Индексы букв, которым помимо обычного compress-margin нужен ещё один
+  // -0.5rem: некоторые пары глифов (например «T» + «a») визуально стоят
+  // дальше друг от друга даже при одинаковом margin из-за формы соседних
+  // букв (засечка/поперечина).
+  extraCompressIndices?: number[]
 }
 
 export function LetterMask({
@@ -24,6 +29,7 @@ export function LetterMask({
   registerRef,
   mask = true,
   compress = false,
+  extraCompressIndices = [],
 }: LetterMaskProps) {
   return (
     <>
@@ -36,10 +42,14 @@ export function LetterMask({
             {char === ' ' ? ' ' : char}
           </span>
         )
+        const marginSteps =
+          (compress && index > 0 ? 1 : 0) +
+          (extraCompressIndices.includes(index) ? 1 : 0)
         const outerClassName = [
           'inline-block',
           mask && 'overflow-hidden',
-          compress && index > 0 && '-ml-[0.5rem]',
+          marginSteps === 1 && '-ml-[0.5rem]',
+          marginSteps === 2 && '-ml-[1rem]',
         ]
           .filter(Boolean)
           .join(' ')

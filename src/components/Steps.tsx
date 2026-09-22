@@ -70,6 +70,7 @@ gsap.registerPlugin(ScrollTrigger)
 // через текущий rootFontSize при использовании в GSAP-трансформах.
 const ROW_REM = 22.8125 // 365px = высота карточки + 20px гап — шаг наезда/смещения карточек
 const NAME_STEP_REM = 2.5 // 40px — шаг оседания имени/года в накопленном стеке
+const NAME_STOP_REM = 6.25 // 100px — итоговая позиция остановки имени/года ниже верха списка
 const NAME_WAIT_BASE_REM = 50.25 // 804px — стартовая (нижняя, «в очереди») позиция первого имени/года
 const TITLE_EXIT_REM = -47.3125 // -757px — насколько title-wrap уезжает вверх при выходе
 
@@ -160,13 +161,13 @@ function Steps() {
       gsap.set(yearListWrap, { opacity: 1 })
       names.forEach((el, i) =>
         gsap.set(el, {
-          top: `${i * NAME_STEP_REM}rem`,
+          top: `${NAME_STOP_REM + i * NAME_STEP_REM}rem`,
           opacity: i === lastIndex ? 1 : 0.2,
         }),
       )
       years.forEach((el, i) =>
         gsap.set(el, {
-          top: `${i * NAME_STEP_REM}rem`,
+          top: `${NAME_STOP_REM + i * NAME_STEP_REM}rem`,
           opacity: i === lastIndex ? 1 : 0.2,
         }),
       )
@@ -222,7 +223,7 @@ function Steps() {
           scrollTrigger: {
             trigger: wrapperEl,
             start: 'top top',
-            end: '+=1062.5%',
+            end: '+=1087.5%',
             scrub: 0.5,
             pin: true,
           },
@@ -291,16 +292,25 @@ function Steps() {
 
         // и только затем имя/год первой карточки оседают на верхнюю позицию.
         tl.to(names[0], {
-          top: 0,
+          top: `${NAME_STOP_REM}rem`,
           opacity: 1,
           duration: 0.5,
           ease: 'power1.out',
         })
         tl.to(
           years[0],
-          { top: 0, opacity: 1, duration: 0.5, ease: 'power1.out' },
+          {
+            top: `${NAME_STOP_REM}rem`,
+            opacity: 1,
+            duration: 0.5,
+            ease: 'power1.out',
+          },
           '<',
         )
+
+        // пауза: первая карточка остаётся активной ещё +25vh скролла, прежде
+        // чем начнётся переход ко второй.
+        tl.to({}, { duration: 0.2353 })
 
         // D. цикл по остальным карточкам: предыдущая уезжает и гаснет,
         // следующая занимает её место и активируется.
@@ -336,7 +346,7 @@ function Steps() {
           tl.to(
             names[i],
             {
-              top: `${i * NAME_STEP_REM}rem`,
+              top: `${NAME_STOP_REM + i * NAME_STEP_REM}rem`,
               opacity: 1,
               duration: 1,
               ease: 'power2.inOut',
@@ -346,7 +356,7 @@ function Steps() {
           tl.to(
             years[i],
             {
-              top: `${i * NAME_STEP_REM}rem`,
+              top: `${NAME_STOP_REM + i * NAME_STEP_REM}rem`,
               opacity: 1,
               duration: 1,
               ease: 'power2.inOut',
@@ -388,6 +398,7 @@ function Steps() {
                 animated
                 mask={false}
                 compress
+                extraCompressIndices={[1]}
                 registerRef={(el, i) => {
                   titleLetterRefs.current[5 + i] = el
                 }}
