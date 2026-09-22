@@ -147,7 +147,7 @@ function Steps() {
     if (reduceMotion) {
       gsap.set(letters, { yPercent: 0, opacity: 1 })
       gsap.set(titleWrap, { opacity: 0.2 })
-      gsap.set(imgWraps, { clipPath: 'inset(0% 0% 0% 0%)' })
+      gsap.set(imgWraps, { width: '38.375rem' })
       gsap.set(cards, { y: 0 })
       gsap.set(cardsShift, { y: `-${lastIndex * ROW_REM}rem` })
       imgWraps.forEach((el, i) =>
@@ -174,7 +174,7 @@ function Steps() {
     }
 
     gsap.set(letters, { yPercent: 100, opacity: 0 })
-    gsap.set(imgWraps, { clipPath: 'inset(0% 50% 0% 50%)' })
+    gsap.set(imgWraps, { width: 0 })
     gsap.set(imgWraps.slice(1), { opacity: 0.2 })
     gsap.set(descs, { opacity: 0 })
     gsap.set(cards, { y: 0 })
@@ -238,9 +238,12 @@ function Steps() {
         })
 
         // B. title расходится к краям + все steps-card-img раскрываются из
-        // центра симметрично в обе стороны (clip-path вместо роста ширины,
-        // чтобы точка раскрытия совпадала с центром экрана, а не с левым
-        // краем карточки)
+        // центра симметрично в обе стороны. Растим width (GSAP интерполирует
+        // его надёжно, в отличие от clip-path — браузер отдаёт вычисленный
+        // clip-path в px, из-за чего анимация срывалась и картинка «прыгала»
+        // вместо плавного роста); центрирование — чистым CSS (left-1/2 +
+        // -translate-x-1/2 на растущем окне), само пересчитывается каждый
+        // кадр по текущей ширине.
         tl.to([titleLeft, titleRight], {
           x: 0,
           duration: 1,
@@ -249,7 +252,7 @@ function Steps() {
         tl.to(
           imgWraps,
           {
-            clipPath: 'inset(0% 0% 0% 0%)',
+            width: '38.375rem',
             duration: 1,
             ease: 'power2.inOut',
           },
@@ -366,7 +369,7 @@ function Steps() {
         <div className="sticky top-0 h-screen overflow-hidden">
           <div
             ref={titleWrapRef}
-            className="Steps-title-wrap absolute top-1/2 left-1/2 flex h-[13.125rem] w-[103.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-between leading-none tracking-[0em] text-white"
+            className="Steps-title-wrap absolute top-1/2 left-1/2 z-10 flex h-[13.125rem] w-[103.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-between leading-none tracking-[0em] text-white"
           >
             <p ref={titleLeftRef} className="Steps-title-left text-[10rem]">
               <LetterMask
@@ -423,17 +426,19 @@ function Steps() {
                   className="Steps-card absolute top-0 left-0 flex h-[21.5625rem] items-start gap-5 bg-ink"
                   style={{ zIndex: STEPS.length - i }}
                 >
-                  <div
-                    ref={(el) => {
-                      imgWrapRefs.current[i] = el
-                    }}
-                    className="steps-card-img h-[21.5625rem] w-[38.375rem] shrink-0 overflow-hidden"
-                  >
-                    <img
-                      src={step.image}
-                      alt={`Проект «${step.name}», ${step.year}`}
-                      className={`size-full object-cover ${step.imageClassName ?? ''}`}
-                    />
+                  <div className="steps-card-img relative h-[21.5625rem] w-[38.375rem] shrink-0 overflow-hidden">
+                    <div
+                      ref={(el) => {
+                        imgWrapRefs.current[i] = el
+                      }}
+                      className="absolute top-0 left-1/2 h-full w-0 -translate-x-1/2 overflow-hidden"
+                    >
+                      <img
+                        src={step.image}
+                        alt={`Проект «${step.name}», ${step.year}`}
+                        className={`absolute top-0 left-1/2 h-full w-[38.375rem] max-w-none -translate-x-1/2 object-cover ${step.imageClassName ?? ''}`}
+                      />
+                    </div>
                   </div>
                   <p
                     ref={(el) => {
