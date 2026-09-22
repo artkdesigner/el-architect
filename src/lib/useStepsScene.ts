@@ -279,20 +279,20 @@ export function useStepsScene(
         const listRevealTime =
           tl.labels.cardsSpreadStart + titleExitDuration * 0.5
 
-        // Плавно и равномерно, растянуто на весь уход title-wrap
-        // (titleExitDuration) — ease 'none' вместо 'power1.out': у power1.out
-        // почти вся видимая часть перехода из 0 в 1 всё равно происходит в
-        // первой трети времени, из-за чего появление всё равно читалось как
-        // резкое.
+        // Плавно и равномерно (ease 'none' — у power1.out почти вся видимая
+        // часть перехода из 0 в 1 всё равно происходит в первой трети
+        // времени, из-за чего появление читалось резким). Длительность — в
+        // два раза короче ухода title-wrap.
+        const listRevealDuration = titleExitDuration * 0.5
         tl.to(
           [nameListWrap, yearListWrap],
-          { opacity: 1, duration: titleExitDuration, ease: 'none' },
+          { opacity: 1, duration: listRevealDuration, ease: 'none' },
           listRevealTime,
         )
         if (hasDescription) {
           tl.to(
             descs[0],
-            { opacity: 1, duration: titleExitDuration, ease: 'none' },
+            { opacity: 1, duration: listRevealDuration, ease: 'none' },
             listRevealTime,
           )
         }
@@ -301,7 +301,7 @@ export function useStepsScene(
         // ПОСЛЕ того, как списки/описание полностью проявились (не
         // одновременно с ними) — по просьбе пользователя. Скорость — та же,
         // что у остальных карточек в цикле ниже (duration: 1, power2.inOut).
-        const nameSettleTime = listRevealTime + titleExitDuration
+        const nameSettleTime = listRevealTime + listRevealDuration
         tl.to(
           names[0],
           {
