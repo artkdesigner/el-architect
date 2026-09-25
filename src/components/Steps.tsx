@@ -168,6 +168,10 @@ function Steps() {
       nameWaitBaseRem: NAME_WAIT_BASE_REM,
       titleExitRem: TITLE_EXIT_REM,
       hasDescription: true,
+      // +50 сверх дефолтных 1087.5 — буфер под наезд Evidence (margin-top:
+      // -50vh на её секции), чтобы наезд ел мёртвое время в конце пина, а не
+      // время просмотра последней карточки (см. «Наезд» в SKILL.md).
+      endPercent: 1137.5,
     },
   )
 

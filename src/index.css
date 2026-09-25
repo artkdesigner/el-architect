@@ -34,6 +34,16 @@ body::-webkit-scrollbar {
   display: none; /* Chrome, Safari, новый Edge */
 }
 
+/* Скрыть полосу прокрутки у отдельного скролл-контейнера (напр. Evidence-cards-wrap),
+   сам скролл остаётся рабочим (трекпад/shift+колесо/перетаскивание). */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Rem-скейлинг корня под эталонные Figma-фреймы: Mobile 375, Tablet 768, Desktop 1920.
    1rem = 16px ровно на ширине эталонного фрейма своей зоны — см. skill figma-to-code. */
 html {

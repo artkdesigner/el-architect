@@ -39,7 +39,7 @@ export function LetterMask({
             ref={animated ? (el) => registerRef?.(el, index) : undefined}
             className="inline-block"
           >
-            {char === ' ' ? ' ' : char}
+            {char === ' ' ? ' ' : char}
           </span>
         )
         const marginSteps =
