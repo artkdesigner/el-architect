@@ -38,6 +38,12 @@ gsap.registerPlugin(ScrollTrigger)
 
   Единый scrub-таймлайн, все фазы — это последовательные твины одного GSAP
   timeline, никакого переключения состояний вручную.
+
+  orientation: 'vertical' (планшет/мобильный) — та же сцена, повёрнутая на 90°:
+  ряд — колонка, въезжает снизу и едет вверх (y вместо x, высоты вместо
+  ширин, высота пина вместо ширины). Подпись у неактивной карточки лежит под
+  картинкой у её верхнего края (top: 0), у активной — над картинкой на
+  descGapRem выше (yPercent: -100, y: -descGap).
 */
 
 export interface EvidenceSceneRefs {
@@ -58,6 +64,8 @@ export interface EvidenceSceneConfig {
   smallCardHRem: number // высота неактивной (ждущей) карточки
   gapRem: number // зазор между карточками
   endPercent?: number // длина скролла ScrollTrigger
+  orientation?: 'horizontal' | 'vertical'
+  descGapRem?: number // vertical: зазор между подписью и верхом картинки
 }
 
 export function useEvidenceScene(
@@ -93,8 +101,11 @@ export function useEvidenceScene(
       smallCardHRem,
       gapRem,
       endPercent = 850,
+      orientation = 'horizontal',
+      descGapRem = 0,
     } = config
     const lastIndex = cardsCount - 1
+    const vertical = orientation === 'vertical'
 
     const rootFontSize = parseFloat(
       getComputedStyle(document.documentElement).fontSize,
@@ -106,11 +117,25 @@ export function useEvidenceScene(
     const smallWPx = px(smallCardWRem)
     const smallHPx = px(smallCardHRem)
     const gapPx = px(gapRem)
-    const pinWidthPx = pinEl.getBoundingClientRect().width
+    const descGapPx = px(descGapRem)
+    const pinRect = pinEl.getBoundingClientRect()
     // Смещение до активной карточки k — все k карточек перед ней маленькие.
-    const dockedX = (k: number) =>
-      pinWidthPx / 2 - (k * (smallWPx + gapPx) + cardWPx / 2)
-    const startX = pinWidthPx
+    // Горизонтально ряд стоит от left: 0, вертикально — от top: 50%.
+    const dockedOffset = (k: number) =>
+      vertical
+        ? -(k * (smallHPx + gapPx) + cardHPx / 2)
+        : pinRect.width / 2 - (k * (smallWPx + gapPx) + cardWPx / 2)
+    const startOffset = vertical ? pinRect.height / 2 : pinRect.width
+    const wrapAt = (offset: number) =>
+      vertical ? { y: offset } : { x: offset }
+    const wrapBase = vertical ? {} : { y: '-50%' }
+
+    const descHidden = vertical
+      ? { yPercent: 0, y: 0, opacity: 0 }
+      : { xPercent: 100, x: gapPx, opacity: 0 }
+    const descShown = vertical
+      ? { yPercent: -100, y: -descGapPx, opacity: 1 }
+      : { xPercent: -100, x: 0, opacity: 1 }
 
     const reduceMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
@@ -118,13 +143,13 @@ export function useEvidenceScene(
     if (reduceMotion) {
       gsap.set(letters, { yPercent: 0, opacity: 1 })
       gsap.set(titleEl, { scale: 0, opacity: 0 })
-      gsap.set(cardsWrap, { x: dockedX(lastIndex), y: '-50%', opacity: 1 })
-      gsap.set(descriptions.slice(0, lastIndex), {
-        xPercent: 100,
-        x: gapPx,
-        opacity: 0,
+      gsap.set(cardsWrap, {
+        ...wrapBase,
+        ...wrapAt(dockedOffset(lastIndex)),
+        opacity: 1,
       })
-      gsap.set(descriptions[lastIndex], { xPercent: -100, x: 0, opacity: 1 })
+      gsap.set(descriptions.slice(0, lastIndex), descHidden)
+      gsap.set(descriptions[lastIndex], descShown)
       gsap.set(cards.slice(0, lastIndex), {
         width: smallWPx,
         height: smallHPx,
@@ -140,8 +165,12 @@ export function useEvidenceScene(
 
     gsap.set(letters, { yPercent: 100, opacity: 0 })
     gsap.set(titleEl, { scale: 1, opacity: 1 })
-    gsap.set(cardsWrap, { x: startX, y: '-50%', opacity: 0.2 })
-    gsap.set(descriptions, { xPercent: 100, x: gapPx, opacity: 0 })
+    gsap.set(cardsWrap, {
+      ...wrapBase,
+      ...wrapAt(startOffset),
+      opacity: 0.2,
+    })
+    gsap.set(descriptions, descHidden)
     gsap.set(cards[0], { width: cardWPx, height: cardHPx, opacity: 1 })
     gsap.set(cards.slice(1), {
       width: smallWPx,
@@ -187,18 +216,17 @@ export function useEvidenceScene(
         tl.labels.titleShrinkStart + titleShrinkDuration * 0.2
       tl.to(
         cardsWrap,
-        { x: dockedX(0), opacity: 1, duration: 1.2, ease: 'power2.inOut' },
-        cardsInStart,
-      )
-      tl.to(
-        descriptions[0],
         {
-          xPercent: -100,
-          x: 0,
+          ...wrapAt(dockedOffset(0)),
           opacity: 1,
           duration: 1.2,
           ease: 'power2.inOut',
         },
+        cardsInStart,
+      )
+      tl.to(
+        descriptions[0],
+        { ...descShown, duration: 1.2, ease: 'power2.inOut' },
         cardsInStart,
       )
 
@@ -208,7 +236,7 @@ export function useEvidenceScene(
       // обратно под картинку.
       for (let i = 1; i <= lastIndex; i++) {
         tl.to(cardsWrap, {
-          x: dockedX(i),
+          ...wrapAt(dockedOffset(i)),
           duration: 1,
           ease: 'power2.inOut',
         })
@@ -236,24 +264,12 @@ export function useEvidenceScene(
         )
         tl.to(
           descriptions[i - 1],
-          {
-            xPercent: 100,
-            x: gapPx,
-            opacity: 0,
-            duration: 1,
-            ease: 'power2.inOut',
-          },
+          { ...descHidden, duration: 1, ease: 'power2.inOut' },
           '<',
         )
         tl.to(
           descriptions[i],
-          {
-            xPercent: -100,
-            x: 0,
-            opacity: 1,
-            duration: 1,
-            ease: 'power2.inOut',
-          },
+          { ...descShown, duration: 1, ease: 'power2.inOut' },
           '<',
         )
       }

@@ -201,7 +201,8 @@ function Steps() {
       titleExitRem: TABLET_TITLE_EXIT_REM,
       titleGapRem: TABLET_TITLE_GAP_REM,
       hasDescription: false,
-      endPercent: 928,
+      // +50 — буфер под наезд Evidence, как на десктопе.
+      endPercent: 978,
     },
   )
 
@@ -231,7 +232,8 @@ function Steps() {
       titleExitRem: MOBILE_TITLE_EXIT_REM,
       titleGapRem: MOBILE_TITLE_GAP_REM,
       hasDescription: false,
-      endPercent: 780,
+      // +50 — буфер под наезд Evidence, как на десктопе.
+      endPercent: 830,
     },
   )
 
@@ -485,7 +487,7 @@ function Steps() {
                   ref={(el) => {
                     nameRefsM.current[i] = el
                   }}
-                  className="Steps-card-name absolute left-0 text-[1.25rem] leading-none whitespace-nowrap text-white"
+                  className="Steps-card-name absolute left-0 text-[1.25rem] leading-none tracking-[-0.0625rem] whitespace-nowrap text-white"
                 >
                   {step.name}
                 </p>
